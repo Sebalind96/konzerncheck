@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>KonzernCheck</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter','Segoe UI',system-ui,sans-serif}
+select,input,textarea,button{font-family:inherit}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:#374151;border-radius:3px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const{useState,useRef,useEffect}=React;
+const D={bg:"#080C12",sf:"#0F1923",sa:"#141E2A",br:"#1E2D3D",bs:"#2A3D52",tx:"#F1F5F9",tm:"#94A3B8",tu:"#475569",nb:"rgba(8,12,18,0.96)",nb2:"#1E2D3D"};
+const L={bg:"#F0F4F8",sf:"#FFFFFF",sa:"#F8FAFC",br:"#E2E8F0",bs:"#CBD5E1",tx:"#0F172A",tm:"#475569",tu:"#94A3B8",nb:"rgba(255,255,255,0.95)",nb2:"#E2E8F0"};
+const A={t:"#0D9488",tl:"#0D948820",td:"#0F766E",r:"#EF4444",rl:"#EF444415",o:"#F97316",ol:"#F9731615",y:"#EAB308",yl:"#EAB30815",g:"#22C55E",gl:"#22C55E15",b:"#3B82F6",bl:"#3B82F615",p:"#A855F7",pl:"#A855F715"};
+
+const DB=[
+  {id:"nestle",brand:"Nestlé",parent:"Nestlé S.A.",flag:"🇨🇭",hq:{city:"Vevey",country:"Schweiz",lat:46.46,lng:6.84},sites:[{name:"Vittel",city:"Vittel",country:"Frankreich",lat:48.2,lng:5.95,product:"Mineralwasser"},{name:"San Pellegrino",city:"San Pellegrino Terme",country:"Italien",lat:45.88,lng:9.65,product:"Mineralwasser"},{name:"Kakao",city:"Abidjan",country:"Côte d'Ivoire",lat:5.35,lng:-4.0,product:"Kakao"}],risk:"high",tags:["Wasser","Plastik","Kinderarbeit"],issues:[{t:"environment",l:"Wasserentnahme in Dürreregionen ohne gültige Konzession",s:"high"},{t:"environment",l:"Größter Plastikverschmutzer weltweit (BFFP 2022)",s:"high"},{t:"social",l:"Kinderarbeit in Kakaobeschaffung Westafrika dokumentiert",s:"high"},{t:"corporate",l:"Steuervermeidung über Schweizer Holdingstruktur",s:"medium"}],desc:"Nestlé kontrolliert über 2.000 Marken weltweit. Grundwasserentnahme in Knappheitsgebieten und Plastikproduktion sind die prominentesten Probleme.",rev:"~94 Mrd. CHF",brands:["Vittel","Perrier","San Pellegrino","KitKat","Maggi","Nespresso","Purina","Thomy"],sources:[{t:"science",title:"Groundwater depletion linked to Nestlé extraction",info:"Nature Water 2022",url:"https://www.nature.com/articles/s44221-022-00004-7"},{t:"report",title:"Break Free From Plastic Brand Audit 2022",info:"BFFP",url:"https://www.breakfreefromplastic.org/brandauditreport2022/"},{t:"ngo",title:"Child Labour in Nestlé's Cocoa Supply Chain",info:"Reuters Investigates",url:"https://www.reuters.com/investigates/special-report/nestle-child-labor/"}]},
+  {id:"ikea",brand:"IKEA",parent:"Ingka Group",flag:"🇳🇱",hq:{city:"Leiden",country:"Niederlande",lat:52.16,lng:4.49},sites:[{name:"Holz (umstritten)",city:"Karpaten",country:"Ukraine",lat:48.2,lng:24.6,product:"Holz aus Urwald"},{name:"Möbelproduktion",city:"Älmhult",country:"Schweden",lat:56.55,lng:14.14,product:"Möbel"},{name:"Textil",city:"Dhaka",country:"Bangladesch",lat:23.81,lng:90.41,product:"Textilien"}],risk:"high",tags:["Holzskandal","Steuervermeidung","Urwald"],issues:[{t:"environment",l:"Illegaler Holzeinschlag in Karpaten-Urwäldern (Earthsight 2020)",s:"high"},{t:"environment",l:"Holz aus russischen Primärwäldern nachgewiesen",s:"high"},{t:"corporate",l:"INGKA Foundation — Steuervermeidung trotz Milliardenumsatz",s:"medium"},{t:"labor",l:"Arbeitsbedingungen bei Textilzulieferern in Bangladesch",s:"medium"}],desc:"IKEA ist der weltgrößte Holzverbraucher unter Möbelherstellern. Earthsight (2020) dokumentierte Holz aus illegal gerodeten Urwäldern in der Ukraine.",rev:"~47 Mrd. €",brands:["IKEA","TaskRabbit","Traemand"],sources:[{t:"report",title:"Flatpack Forests – IKEAs illegale Holzbeschaffung",info:"Earthsight",url:"https://www.earthsight.org.uk/investigations/flatpack-forests"},{t:"ngo",title:"IKEA linked to illegal logging in Ukrainian Carpathians",info:"The Guardian",url:"https://www.theguardian.com/environment/2020/sep/24/ikea-linked-to-illegal-logging-in-ukrainian-carpathians"}]},
+  {id:"mueller",brand:"Berief / Theo Müller",parent:"Theo Müller Gruppe",flag:"🇱🇺",hq:{city:"Luxemburg",country:"Luxemburg",lat:49.61,lng:6.13},sites:[{name:"Leppersdorf",city:"Leppersdorf",country:"Deutschland",lat:51.15,lng:13.9,product:"Milchprodukte"},{name:"Berief Werk",city:"Coesfeld",country:"Deutschland",lat:51.95,lng:7.17,product:"Pflanzendrinks"}],risk:"medium",tags:["Steueroptimierung","Übernahme 2021"],issues:[{t:"corporate",l:"Holding in Luxemburg — Steueroptimierung trotz DE-Milliardengeschäft",s:"medium"},{t:"labor",l:"Kritik an Arbeitsbedingungen in Logistik",s:"medium"}],desc:"Berief Food wurde 2021 von der Theo Müller Gruppe übernommen — einem der größten europäischen Molkereikonzerne mit Sitz in Luxemburg.",rev:"~12 Mrd. €",brands:["Müller Milch","Weihenstephan","Sachsenmilch","Berief","Naty"],sources:[{t:"news",title:"Theo Müller übernimmt Berief Food GmbH",info:"Lebensmittel Zeitung 2021",url:"https://www.lebensmittelzeitung.net/"}]},
+  {id:"kohle",brand:"Holzkohle (Discounter)",parent:"OEM-Umverpacker EU",flag:"🇵🇱",hq:{city:"Warschau",country:"Polen",lat:52.23,lng:21.01},sites:[{name:"Ursprung Tansania",city:"Kigoma",country:"Tansania",lat:-4.88,lng:29.62,product:"Rohholzkohle"},{name:"Ursprung Kongo",city:"Kinshasa",country:"DR Kongo",lat:-4.32,lng:15.32,product:"Rohholzkohle"},{name:"Umpackbetrieb",city:"Breslau",country:"Polen",lat:51.11,lng:17.04,product:"'Made in EU'"}],risk:"high",tags:["Regenwald","Herkunfts-Verschleierung","Kein FSC"],issues:[{t:"environment",l:"Rohkohle aus Primärwäldern im Kongobecken und Tansania",s:"high"},{t:"environment",l:"EU-Umpackung erzeugt irreführende 'Made in EU'-Angabe",s:"high"},{t:"environment",l:"Fehlende FSC-Zertifizierung bei Discounter-Eigenmarken",s:"high"}],desc:"Billigkohle aus Regenwäldern in Zentralafrika wird in EU-Ländern umverpackt und erhält so eine europäische Herkunftsbezeichnung.",rev:"~2 Mrd. € (EU)",brands:["Discounter-Eigenmarken"],sources:[{t:"report",title:"Burning Forests: EU's role in the global charcoal trade",info:"Earthsight 2022",url:"https://www.earthsight.org.uk/investigations/burning-forests"},{t:"ngo",title:"Holzkohle aus dem Regenwald im deutschen Supermarkt",info:"WWF Deutschland",url:"https://www.wwf.de/themen-projekte/waelder/holzkohle"}]},
+  {id:"coke",brand:"Coca-Cola",parent:"The Coca-Cola Company",flag:"🇺🇸",hq:{city:"Atlanta",country:"USA",lat:33.75,lng:-84.39},sites:[{name:"Abfüllung Chiapas",city:"San Cristóbal",country:"Mexiko",lat:16.74,lng:-92.64,product:"Cola / Wasserstreit"},{name:"Abfüllung Indien",city:"Mehdiganj",country:"Indien",lat:25.31,lng:83.01,product:"Cola / Grundwasser"},{name:"Europazentrale",city:"Berlin",country:"Deutschland",lat:52.52,lng:13.4,product:"Distribution"}],risk:"high",tags:["Wasser","Plastik","Lobbying"],issues:[{t:"environment",l:"Wasserentnahme in Mexiko und Indien trotz lokaler Wasserknappheit",s:"high"},{t:"environment",l:"Größter Plastikverschmutzer weltweit (BFFP 2022, 3. Jahr in Folge)",s:"high"},{t:"political",l:"Lobbying gegen Zuckersteuer und Recyclingpflicht",s:"medium"}],desc:"Coca-Cola produziert über 100 Milliarden Plastikflaschen pro Jahr. Konflikte um Grundwasserrechte betreffen indigene Gemeinden.",rev:"~45 Mrd. $",brands:["Coca-Cola","Fanta","Sprite","Powerade","Fuze Tea","Apollinaris","Vio"],sources:[{t:"ngo",title:"Coca-Cola water conflicts in Chiapas, Mexico",info:"The Guardian",url:"https://www.theguardian.com/world/2020/jan/14/mexico-coca-cola-chiapas-water-indigenous"},{t:"report",title:"BFFP Plastic Waste Brand Audit 2022",info:"Break Free From Plastic",url:"https://www.breakfreefromplastic.org/brandauditreport2022/"}]},
+];
+
+const IM={environment:{label:"Umwelt",color:A.t,bg:A.tl,icon:"🌿"},political:{label:"Politik",color:A.b,bg:A.bl,icon:"🏛️"},corporate:{label:"Konzern",color:A.p,bg:A.pl,icon:"🏦"},labor:{label:"Arbeit",color:A.o,bg:A.ol,icon:"👷"},social:{label:"Sozial",color:"#0E7490",bg:"#0E749015",icon:"🤝"}};
+const SM={high:{label:"Kritisch",color:A.r,bg:A.rl},medium:{label:"Bedenklich",color:A.o,bg:A.ol},low:{label:"Hinweis",color:A.y,bg:A.yl}};
+const RM={high:{label:"Hohes Risiko",color:A.r,bg:A.rl,dot:"🔴"},medium:{label:"Mittleres Risiko",color:A.o,bg:A.ol,dot:"🟡"},low:{label:"Geringes Risiko",color:A.g,bg:A.gl,dot:"🟢"}};
+const CO2F={"Schiff":0.015,"LKW":0.062,"Bahn":0.022,"Flugzeug":0.602};
+const DIST={"Deutschland":0,"Österreich":520,"Frankreich":870,"Italien":1200,"Schweiz":740,"Niederlande":580,"Polen":550,"Schweden":1300,"Ukraine":1600,"Luxemburg":730,"Bangladesch":7800,"Indien":7000,"Tansania":7200,"DR Kongo":6900,"Mexiko":9700,"USA":8600,"Côte d'Ivoire":5200,"China":7800,"Brasilien":9800};
+const SEA={1:{n:"Januar",e:"❄️",i:[{n:"Feldsalat",c:"Salat"},{n:"Grünkohl",c:"Gemüse"},{n:"Lauch",c:"Gemüse"},{n:"Rote Bete",c:"Wurzel"},{n:"Äpfel (Lager)",c:"Obst"}]},2:{n:"Februar",e:"🌨️",i:[{n:"Feldsalat",c:"Salat"},{n:"Grünkohl",c:"Gemüse"},{n:"Schwarzwurzel",c:"Wurzel"},{n:"Äpfel (Lager)",c:"Obst"}]},3:{n:"März",e:"🌱",i:[{n:"Rhabarber",c:"Obst"},{n:"Spinat",c:"Gemüse"},{n:"Radieschen",c:"Gemüse"},{n:"Bärlauch",c:"Kräuter"}]},4:{n:"April",e:"🌸",i:[{n:"Spargel",c:"Gemüse"},{n:"Rhabarber",c:"Obst"},{n:"Spinat",c:"Gemüse"},{n:"Erdbeeren (früh)",c:"Obst"}]},5:{n:"Mai",e:"🌿",i:[{n:"Spargel",c:"Gemüse"},{n:"Erdbeeren",c:"Obst"},{n:"Erbsen",c:"Gemüse"},{n:"Kohlrabi",c:"Gemüse"},{n:"Schnittlauch",c:"Kräuter"}]},6:{n:"Juni",e:"☀️",i:[{n:"Erdbeeren",c:"Obst"},{n:"Kirschen",c:"Obst"},{n:"Gurken",c:"Gemüse"},{n:"Zucchini",c:"Gemüse"},{n:"Tomaten",c:"Gemüse"}]},7:{n:"Juli",e:"🌞",i:[{n:"Tomaten",c:"Gemüse"},{n:"Paprika",c:"Gemüse"},{n:"Himbeeren",c:"Obst"},{n:"Heidelbeeren",c:"Obst"},{n:"Mais",c:"Gemüse"},{n:"Pfirsiche",c:"Obst"}]},8:{n:"August",e:"🌻",i:[{n:"Tomaten",c:"Gemüse"},{n:"Paprika",c:"Gemüse"},{n:"Melonen",c:"Obst"},{n:"Pflaume",c:"Obst"},{n:"Brokkoli",c:"Gemüse"}]},9:{n:"September",e:"🍂",i:[{n:"Äpfel",c:"Obst"},{n:"Birnen",c:"Obst"},{n:"Kürbis",c:"Gemüse"},{n:"Tomaten",c:"Gemüse"},{n:"Weintrauben",c:"Obst"}]},10:{n:"Oktober",e:"🎃",i:[{n:"Kürbis",c:"Gemüse"},{n:"Äpfel",c:"Obst"},{n:"Rote Bete",c:"Wurzel"},{n:"Wirsing",c:"Gemüse"},{n:"Rosenkohl",c:"Gemüse"}]},11:{n:"November",e:"🍁",i:[{n:"Feldsalat",c:"Salat"},{n:"Grünkohl",c:"Gemüse"},{n:"Rosenkohl",c:"Gemüse"},{n:"Äpfel (Lager)",c:"Obst"}]},12:{n:"Dezember",e:"🎄",i:[{n:"Feldsalat",c:"Salat"},{n:"Grünkohl",c:"Gemüse"},{n:"Rosenkohl",c:"Gemüse"},{n:"Äpfel (Lager)",c:"Obst"}]}};
+const CC={"Obst":{bg:"#FEF9C3",c:"#854D0E"},"Gemüse":{bg:"#DCFCE7",c:"#166534"},"Salat":{bg:"#CCFBF1",c:"#0F766E"},"Wurzel":{bg:"#FFEDD5",c:"#9A3412"},"Kräuter":{bg:"#F0FDF4",c:"#14532D"}};
+const NEWS0=[
+  {id:"n1",date:"2024-11",cat:"acquisition",konzern:"Nestlé",title:"Nestlé verkauft US-Wassermarken an One Rock Capital",summary:"Poland Spring und Deer Park werden unter dem Namen BlueTriton weitergeführt.",rc:"neutral",src:"Reuters"},
+  {id:"n2",date:"2024-09",cat:"environment",konzern:"IKEA",title:"EU-Entwaldungsverordnung trifft IKEAs Lieferkette",summary:"Die EUDR verpflichtet IKEA ab 2025 zu lückenloser Rückverfolgbarkeit aller Holzprodukte.",rc:"positive",src:"Earthsight"},
+  {id:"n3",date:"2024-08",cat:"scandal",konzern:"Coca-Cola",title:"Plastikbericht 2024: Coca-Cola erneut Platz 1",summary:"Das vierte Jahr in Folge führt Coca-Cola das BFFP-Ranking der Plastikverschmutzer an.",rc:"negative",src:"BFFP"},
+  {id:"n4",date:"2024-04",cat:"regulation",konzern:"Allgemein",title:"EU-Lieferkettengesetz (CSDDD) verabschiedet",summary:"Ab 2027 müssen Großkonzerne Menschenrechts- und Umweltstandards in der Lieferkette prüfen.",rc:"positive",src:"EU-Kommission"},
+  {id:"n5",date:"2024-03",cat:"scandal",konzern:"Holzkohle",title:"Earthsight: Regenwald-Kohle weiter in deutschen Supermärkten",summary:"Trotz Medienaufmerksamkeit läuft der Handel mit nicht-zertifizierter Holzkohle weiter.",rc:"negative",src:"Earthsight"},
+];
+
+function Bdg({children,color=A.t,bg,small}){return <span style={{display:"inline-flex",alignItems:"center",gap:3,background:bg||color+"18",color,border:`1px solid ${color}30`,borderRadius:20,padding:small?"2px 8px":"4px 10px",fontSize:small?11:12,fontWeight:600,whiteSpace:"nowrap"}}>{children}</span>;}
+function RBdg({level,large}){const m=RM[level]||RM.low;return <span style={{display:"inline-flex",alignItems:"center",gap:5,background:m.bg,color:m.color,border:`1.5px solid ${m.color}40`,borderRadius:8,padding:large?"6px 14px":"4px 10px",fontSize:large?14:12,fontWeight:700}}>{m.dot} {m.label}</span>;}
+function SL({c,T}){return <p style={{fontSize:11,fontWeight:700,color:T.tu,textTransform:"uppercase",letterSpacing:"0.08em",margin:"0 0 8px"}}>{c}</p>;}
+
+async function aiCall(sys,msg,tok=900){
+  const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:tok,system:sys,messages:[{role:"user",content:msg}]})});
+  const d=await r.json();
+  return JSON.parse((d.content?.map(c=>c.text||"").join("")||"").replace(/```json|```/g,"").trim());
+}
+
+function Home({T,go,setD}){
+  const[tip,setTip]=useState(0);
+  const TIPS=["Holzkohle mit 'Made in Poland' kann trotzdem aus dem Kongobecken stammen — EU-Umpackung macht es möglich.","Viele Bio-Marken im Supermarkt gehören denselben Großkonzernen wie die Billigware — schau auf den Hersteller.","Nestlé hat in Gebieten mit Wasserknappheit Grundwasser abgepumpt, teils mit Konzessionen aus den 1960ern.","IKEA verbraucht etwa 1% des weltweiten Holzeinschlags. Earthsight fand 2020 Urwald-Holz aus der Ukraine in IKEA-Produkten.","Nur etwa 9% des je produzierten Plastiks wurde wirklich recycelt — trotz 'recyclebar'-Aufdrucken.","Wintererdbeeren aus Marokko können mehr CO₂ verursachen als eine ganze Saison heimischer Erdbeeren."];
+  useEffect(()=>{const t=setInterval(()=>setTip(i=>(i+1)%TIPS.length),5000);return()=>clearInterval(t);},[]);
+  const spot=DB[Math.floor(Date.now()/86400000)%DB.length];
+  const FEATS=[["📷","Barcode scannen","Mutterkonzern in Sekunden.","scan"],["📚","Bibliothek","Konzerne mit Quellen & Karte.","lib"],["📰","News","Übernahmen & Skandale.","news"],["🥦","Saison","Regional & frisch einkaufen.","season"],["🌱","Alternativen","Bessere Produkte entdecken.","lib"],["⚖️","Vergleich","Konzerne nebeneinander.","compare"],["📬","Fund melden","KI prüft deine Meldung.","report"],["💾","Offline","Scans bleiben gespeichert.","cache"]];
+  return(
+    <div>
+      <div style={{background:`linear-gradient(135deg,${A.t}18,${A.b}10)`,border:`1px solid ${A.t}30`,borderRadius:20,padding:"26px 20px 22px",marginBottom:16,textAlign:"center"}}>
+        <div style={{display:"inline-flex",alignItems:"center",gap:8,background:A.tl,border:`1px solid ${A.t}40`,borderRadius:20,padding:"4px 14px",marginBottom:12}}>
+          <span style={{width:7,height:7,borderRadius:"50%",background:A.t,display:"inline-block"}}/>
+          <span style={{fontSize:11,fontWeight:700,color:A.t,letterSpacing:"0.06em"}}>KOSTENLOS · WERBEFREI · TRANSPARENT</span>
+        </div>
+        <h2 style={{fontSize:23,fontWeight:900,color:T.tx,letterSpacing:"-0.03em",margin:"0 0 10px",lineHeight:1.25}}>Wer steckt wirklich<br/>hinter deinem Produkt?</h2>
+        <p style={{color:T.tm,fontSize:13,lineHeight:1.7,margin:"0 0 18px"}}>KonzernCheck macht Lieferketten, Eigentümerstrukturen und Umweltverstöße sichtbar — damit du informiert einkaufst.</p>
+        <div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>
+          <button onClick={()=>go("scan")} style={{background:A.t,color:"white",border:"none",borderRadius:12,padding:"11px 20px",fontWeight:800,fontSize:14,cursor:"pointer"}}>📷 Produkt scannen</button>
+          <button onClick={()=>go("lib")} style={{background:T.sf,color:T.tx,border:`1.5px solid ${T.br}`,borderRadius:12,padding:"11px 18px",fontWeight:700,fontSize:14,cursor:"pointer"}}>📚 Bibliothek</button>
+        </div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
+        {[["2.000+","Nestlé-Marken weltweit"],["80%","Supermärkte sind Konzernware"],["60%","Holzkohle ohne Zertifikat"],["100 Mrd.","Plastikflaschen/Jahr (Coca-Cola)"]].map(([n,l])=>(
+          <div key={n} style={{background:T.sf,border:`1px solid ${T.br}`,borderRadius:12,padding:"12px 14px",textAlign:"center"}}>
+            <p style={{fontSize:20,fontWeight:900,color:A.t,margin:"0 0 2px"}}>{n}</p>
+            <p style={{fontSize:11,color:T.tu,margin:0,lineHeight:1.4}}>{l}</p>
+          </div>
+        ))}
+      </div>
+      <div style={{background:T.sf,border:`1px solid ${T.br}`,borderRadius:14,padding:"14px 18px",marginBottom:16}}>
+        <div style={{borderLeft:`3px solid ${A.t}`,paddingLeft:12}}>
+          <p style={{fontSize:11,fontWeight:700,color:A.t,textTransform:"uppercase",letterSpacing:"0.08em",margin:"0 0 5px"}}>💡 Wusstest du?</p>
+          <p style={{fontSize:13,color:T.tm,lineHeight:1.65,margin:"0 0 10px"}}>{TIPS[tip]}</p>
+          <div style={{display:"flex",gap:5}}>{TIPS.map((_,i)=><button key={i} onClick={()=>setTip(i)} style={{width:i===tip?20:6,height:6,borderRadius:3,background:i===tip?A.t:T.br,border:"none",cursor:"pointer",transition:"width 0.3s",padding:0}}/>)}</div>
+        </div>
+      </div>
+      <div style={{marginBottom:16}}>
+        <SL c="🔦 Konzern im Spotlight" T={T}/>
+        <div onClick={()=>setD(spot)} style={{background:T.sf,border:`1.5px solid ${A.r}40`,borderRadius:14,padding:"14px 16px",cursor:"pointer"}} onMouseEnter={e=>e.currentTarget.style.borderColor=A.r} onMouseLeave={e=>e.currentTarget.style.borderColor=A.r+"40"}>
+          <div style={{display:"flex",justifyContent:"space-between",gap:10,marginBottom:8,flexWrap:"wrap"}}>
+            <div><h3 style={{margin:"0 0 2px",fontSize:16,fontWeight:800,color:T.tx}}>{spot.brand}</h3><p style={{margin:0,fontSize:12,color:T.tu}}>{spot.parent} · {spot.flag}</p></div>
+            <RBdg level={spot.risk}/>
+          </div>
+          <p style={{color:T.tm,fontSize:13,lineHeight:1.6,margin:"0 0 8px"}}>{spot.desc.slice(0,110)}…</p>
+          <p style={{margin:0,fontSize:12,color:A.t,fontWeight:600}}>Details ansehen →</p>
+        </div>
+      </div>
+      <div style={{marginBottom:16}}>
+        <SL c="Was kann die App?" T={T}/>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+          {FEATS.map(([icon,title,desc,nav])=>(
+            <button key={title} onClick={()=>go(nav)} style={{background:T.sf,border:`1px solid ${T.br}`,borderRadius:12,padding:"13px",textAlign:"left",cursor:"pointer"}} onMouseEnter={e=>e.currentTarget.style.borderColor=A.t} onMouseLeave={e=>e.currentTarget.style.borderColor=T.br}>
+              <span style={{fontSize:20,display:"block",marginBottom:5}}>{icon}</span>
+              <p style={{fontWeight:700,fontSize:13,color:T.tx,margin:"0 0 2px"}}>{title}</p>
+              <p style={{fontSize:11,color:T.tu,margin:0}}>{desc}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+      <div style={{background:T.sf,border:`1px solid ${T.br}`,borderRadius:14,padding:"16px 18px",marginBottom:16}}>
+        <h3 style={{fontWeight:800,fontSize:15,color:T.tx,margin:"0 0 12px"}}>Warum ist das wichtig?</h3>
+        {[["🏢","Konzentration der Macht","Wenige Konzerne besitzen Hunderte von Marken. Wer nur auf den Markennamen schaut, sieht nicht wessen Kasse klingelt."],["🌳","Verschleierte Lieferketten","Holzkohle aus dem Regenwald wird in der EU umverpackt. Holz aus Urwäldern landet in Möbeln. Kakao durch Kinderarbeit steckt in Süßigkeiten."],["💧","Ressourcen & Grundrechte","Konzerne pumpen Grundwasser in Knappheitsgebieten ab — auf Kosten lokaler Bevölkerung."],["🗳️","Politik & Lobbying","Konzerne finanzieren Lobbying gegen Umweltgesetze und Recyclingpflichten. Informierte Kaufentscheidungen sind politische Teilhabe."]].map(([i,t,d],idx,arr)=>(
+          <div key={i} style={{display:"flex",gap:12,marginBottom:idx<arr.length-1?12:0,paddingBottom:idx<arr.length-1?12:0,borderBottom:idx<arr.length-1?`1px solid ${T.br}`:"none"}}>
+            <span style={{fontSize:18,flexShrink:0}}>{i}</span>
+            <div><p style={{fontWeight:700,fontSize:13,color:T.tx,margin:"0 0 2px"}}>{t}</p><p style={{fontSize:13,color:T.tm,margin:0,lineHeight:1.6}}>{d}</p></div>
+          </div>
+        ))}
+      </div>
+      <div style={{background:`linear-gradient(135deg,${A.t}22,${A.t}08)`,border:`1.5px solid ${A.t}40`,borderRadius:16,padding:"18px 20px",textAlign:"center"}}>
+        <p style={{fontSize:20,margin:"0 0 6px"}}>🛒</p>
+        <h3 style={{fontWeight:800,fontSize:15,color:T.tx,margin:"0 0 6px"}}>Beim nächsten Einkauf</h3>
+        <p style={{color:T.tm,fontSize:13,lineHeight:1.6,margin:"0 0 12px"}}>Barcode scannen und sofort sehen, welchem Konzern das Produkt gehört.</p>
+        <button onClick={()=>go("scan")} style={{background:A.t,color:"white",border:"none",borderRadius:12,padding:"10px 22px",fontWeight:800,fontSize:14,cursor:"pointer"}}>Jetzt ausprobieren →</button>
+      </div>
+    </div>
+  );
+}
+
+function MapView({sites,hq,T}){
+  const W=640,H=260;const[tip,setTip]=useState(null);
+  const p=(lat,lng)=>[((lng+180)/360)*W,((90-lat)/180)*H];
+  const pts=[...(sites||[]).map(s=>({...s,isHq:false})),hq?{...hq,product:"Hauptsitz",isHq:true}:null].filter(Boolean);
+  return(
+    <div style={{borderRadius:12,overflow:"hidden",border:`1px solid ${T.br}`}}>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",display:"block"}}>
+        <rect width={W} height={H} fill={T.bg}/>
+        {Array.from({length:8}).map((_,i)=><line key={i} x1={0} y1={(i+1)*H/9} x2={W} y2={(i+1)*H/9} stroke={T.br} strokeWidth={0.5}/>)}
+        {Array.from({length:16}).map((_,i)=><line key={i} x1={(i+1)*W/17} y1={0} x2={(i+1)*W/17} y2={H} stroke={T.br} strokeWidth={0.5}/>)}
+        <line x1={0} y1={H/2} x2={W} y2={H/2} stroke={T.bs} strokeWidth={1} strokeDasharray="4 4"/>
+        {hq&&pts.filter(q=>!q.isHq).map((s,i)=>{const[x1,y1]=p(hq.lat,hq.lng),[x2,y2]=p(s.lat,s.lng);return<line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={A.t} strokeWidth={1} strokeDasharray="3 3" opacity={0.5}/>;})}
+        {pts.map((s,i)=>{const[x,y]=p(s.lat,s.lng);return(<g key={i} onMouseEnter={()=>setTip({s,x,y})} onMouseLeave={()=>setTip(null)} style={{cursor:"pointer"}}>{s.isHq?<><circle cx={x} cy={y} r={8} fill={A.t+"25"} stroke={A.t} strokeWidth={2}/><circle cx={x} cy={y} r={3} fill={A.t}/></>:<><circle cx={x} cy={y} r={6} fill={A.r+"20"} stroke={A.r} strokeWidth={1.5}/><circle cx={x} cy={y} r={2.5} fill={A.r}/></>}</g>);})}
+        {tip&&(()=>{const tx=Math.max(4,Math.min(tip.x-5,W-155)),ty=Math.max(4,tip.y-60);return(<g><rect x={tx} y={ty} width={150} height={52} rx={6} fill={T.sf} stroke={T.br} strokeWidth={1}/><text x={tx+10} y={ty+17} fill={T.tx} fontSize={10} fontWeight={700}>{tip.s.city||tip.s.name}</text><text x={tx+10} y={ty+30} fill={T.tm} fontSize={9}>{tip.s.country}</text><text x={tx+10} y={ty+43} fill={A.t} fontSize={9}>{tip.s.product}</text></g>);})()} 
+      </svg>
+      <div style={{padding:"6px 14px",borderTop:`1px solid ${T.br}`,display:"flex",gap:16,background:T.sf}}>
+        {[[A.t,"Hauptsitz"],[A.r,"Produktion"]].map(([c,l])=>(<span key={l} style={{color:T.tu,fontSize:11,display:"flex",alignItems:"center",gap:4}}><span style={{width:7,height:7,borderRadius:"50%",background:c,display:"inline-block"}}/>{l}</span>))}
+      </div>
+    </div>
+  );
+}
+
+function CO2View({sites,T}){
+  const sc=[...new Set((sites||[]).map(s=>s.country))];
+  const[country,setC]=useState(sc[0]||"Italien");const[tr,setTr]=useState("LKW");const[w,setW]=useState(1);
+  const dist=DIST[country]??1000;const ci=+(w*dist*CO2F[tr]).toFixed(2);const cl=+(w*300*CO2F["LKW"]).toFixed(2);const diff=+(ci-cl).toFixed(2);const worse=diff>0;
+  const sel={width:"100%",background:T.sa,border:`1px solid ${T.br}`,borderRadius:8,padding:"8px 10px",color:T.tx,fontSize:13};
+  return(
+    <div style={{background:T.sa,borderRadius:12,border:`1px solid ${T.br}`,padding:16,marginTop:14}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}><span>🌍</span><h4 style={{margin:0,fontSize:14,fontWeight:700,color:T.tx}}>CO₂-Transportrechner</h4></div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+        <div><p style={{fontSize:10,fontWeight:700,color:T.tu,textTransform:"uppercase",margin:"0 0 4px"}}>Herkunft</p><select value={country} onChange={e=>setC(e.target.value)} style={sel}>{sc.length>0&&<optgroup label="Bekannte Standorte">{sc.map(c=><option key={c}>{c}</option>)}</optgroup>}<optgroup label="Alle Länder">{Object.keys(DIST).filter(c=>!sc.includes(c)).map(c=><option key={c}>{c}</option>)}</optgroup></select></div>
+        <div><p style={{fontSize:10,fontWeight:700,color:T.tu,textTransform:"uppercase",margin:"0 0 4px"}}>Transport</p><select value={tr} onChange={e=>setTr(e.target.value)} style={sel}>{Object.keys(CO2F).map(t=><option key={t}>{t}</option>)}</select></div>
+      </div>
+      <div style={{marginBottom:10}}><p style={{fontSize:10,fontWeight:700,color:T.tu,textTransform:"uppercase",margin:"0 0 4px"}}>Gewicht (kg)</p><input type="number" min={0.1} step={0.1} value={w} onChange={e=>setW(Math.max(0.1,parseFloat(e.target.value)||1))} style={{...sel,boxSizing:"border-box"}}/></div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
+        {[[`Aus ${country}`,ci,worse?A.r:A.g,`${dist.toLocaleString()} km`],["Aus Deutschland",cl,A.g,"~300 km"]].map(([l,v,c,d])=>(<div key={l} style={{background:T.sf,borderRadius:10,padding:"10px 12px",border:`1px solid ${T.br}`,textAlign:"center"}}><p style={{color:T.tu,fontSize:10,margin:"0 0 3px"}}>{l}</p><p style={{color:c,fontWeight:800,fontSize:18,margin:"0 0 2px"}}>{v}<span style={{fontSize:11,fontWeight:400}}> kg</span></p><p style={{color:T.tu,fontSize:10,margin:0}}>{d}</p></div>))}
+      </div>
+      <div style={{borderRadius:8,padding:"10px 12px",background:worse?A.rl:A.gl,border:`1px solid ${worse?A.r:A.g}30`}}><p style={{color:worse?A.r:A.g,fontSize:12,margin:0,lineHeight:1.5}}>{worse?`⚠️ ${country} verursacht ${diff} kg mehr CO₂ — ca. ${(diff/0.21).toFixed(0)} km Autofahren.`:"✓ Ähnliches CO₂-Niveau wie ein deutsches Produkt."}</p></div>
+    </div>
+  );
+}
+
+function Detail({entry,onBack,favs,toggleFav,T}){
+  const[tab,setTab]=useState("overview");const[altD,setAltD]=useState(null);const[altL,setAltL]=useState(false);const[altO,setAltO]=useState(false);const[copied,setCopied]=useState(false);
+  const isFav=favs.includes(entry.id);
+  function share(){const risk=RM[entry.risk||"medium"];const top=(entry.issues||[]).filter(i=>i.s==="high").slice(0,2).map(i=>"⚠️ "+i.l).join("\n");const txt=`🔍 KonzernCheck: ${entry.brand}\nMutterkonzern: ${entry.parent} ${entry.flag}\n${risk.dot} ${risk.label}\n\n${top?top+"\n\n":""}Quellen: earthsight.org.uk · wwf.de`;navigator.clipboard?.writeText(txt).then(()=>{setCopied(true);setTimeout(()=>setCopied(false),2000);}).catch(()=>alert(txt));}
+  async function loadAlt(){if(altD){setAltO(o=>!o);return;}setAltL(true);setAltO(true);try{const r=await aiCall(`Verbraucher-Berater. NUR JSON:\n{"isFood":true|false,"alternatives":[{"name":"","brand":"","why":"","ecoScore":"A|B|C","healthScore":"A|B|C","price":"€|€€|€€€","availability":"Supermarkt|Bio-Laden|Online","certifications":[]}],"avoidReason":"","tips":""}`,`Produkt: "${entry.brand}". Marke: "${entry.parent}". 3 bessere Alternativen.`,800);setAltD(r);}catch{setAltD({isFood:false,alternatives:[],avoidReason:"Konnte nicht laden.",tips:""});}setAltL(false);}
+  const ecoC={A:A.g,B:A.y,C:A.o};
+  return(
+    <div>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,gap:8,flexWrap:"wrap"}}>
+        <button onClick={onBack} style={{background:"none",border:"none",color:T.tm,fontSize:13,cursor:"pointer",padding:0,fontWeight:600}}>← Zurück</button>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={share} style={{background:T.sa,border:`1px solid ${T.br}`,borderRadius:20,padding:"5px 12px",fontSize:12,color:copied?A.t:T.tm,cursor:"pointer",fontWeight:600}}>{copied?"✓ Kopiert":"📤 Teilen"}</button>
+          <button onClick={()=>toggleFav(entry.id)} style={{background:isFav?A.yl:"none",border:`1px solid ${isFav?A.y:T.br}`,borderRadius:20,padding:"5px 12px",fontSize:12,color:isFav?A.y:T.tu,cursor:"pointer",fontWeight:600}}>{isFav?"★ Gespeichert":"☆ Merken"}</button>
+        </div>
+      </div>
+      <div style={{background:T.sf,borderRadius:14,border:`1px solid ${T.br}`,padding:"18px 18px 14px",marginBottom:14}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,flexWrap:"wrap",marginBottom:10}}><div><h2 style={{margin:"0 0 3px",fontSize:20,fontWeight:800,color:T.tx,letterSpacing:"-0.02em"}}>{entry.brand}</h2><p style={{margin:0,fontSize:13,color:T.tm}}>{entry.parent} · {entry.flag}</p></div><RBdg level={entry.risk||"medium"} large/></div>
+        <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:10}}>{(entry.tags||[]).map(t=><Bdg key={t} color={A.t} small>{t}</Bdg>)}</div>
+        {entry.rev&&<div style={{background:T.sa,borderRadius:8,padding:"8px 11px",display:"inline-block"}}><p style={{fontSize:10,fontWeight:700,color:T.tu,textTransform:"uppercase",margin:"0 0 1px"}}>Umsatz</p><p style={{margin:0,fontWeight:700,fontSize:13,color:T.tx}}>{entry.rev}</p></div>}
+      </div>
+      <div style={{display:"flex",gap:2,background:T.sa,borderRadius:10,padding:4,marginBottom:14,border:`1px solid ${T.br}`}}>
+        {[["overview","Übersicht"],["map","🗺 Karte"],["sources","📚 Quellen"]].map(([id,label])=>(<button key={id} onClick={()=>setTab(id)} style={{flex:1,background:tab===id?T.sf:"transparent",border:tab===id?`1px solid ${T.br}`:"1px solid transparent",borderRadius:8,padding:"7px 4px",fontSize:12,fontWeight:tab===id?700:500,color:tab===id?T.tx:T.tu,cursor:"pointer"}}>{label}</button>))}
+      </div>
+      {tab==="overview"&&(
+        <div>
+          <div style={{background:T.sf,borderRadius:12,border:`1px solid ${T.br}`,padding:16,marginBottom:12}}><p style={{color:T.tm,fontSize:13,lineHeight:1.7,margin:0}}>{entry.desc}</p></div>
+          <SL c="Probleme & Befunde" T={T}/>
+          {(entry.issues||[]).map((issue,i)=>{const im=IM[issue.t]||IM.corporate;const sm=SM[issue.s]||SM.low;return(<div key={i} style={{background:T.sf,border:`1px solid ${T.br}`,borderRadius:10,padding:"11px 13px",marginBottom:7,display:"flex",gap:9,alignItems:"flex-start"}}><span style={{fontSize:16,flexShrink:0,marginTop:1}}>{im.icon}</span><div style={{flex:1}}><p style={{color:T.tx,fontSize:13,margin:"0 0 5px",lineHeight:1.5}}>{issue.l}</p><div style={{display:"flex",gap:5}}><Bdg color={im.color} bg={im.bg} small>{im.label}</Bdg><Bdg color={sm.color} bg={sm.bg} small>{sm.label}</Bdg></div></div></div>);})}
+          <div style={{marginTop:14}}>
+            <button onClick={loadAlt} style={{width:"100%",background:altO?T.sa:A.g+"18",border:`1.5px solid ${altO?T.br:A.g}`,borderRadius:12,padding:"12px 14px",display:"flex",alignItems:"center",justifyContent:"space-between",cursor:"pointer",color:T.tx}}>
+              <div style={{display:"flex",alignItems:"center",gap:9}}><span style={{fontSize:18}}>🌱</span><div style={{textAlign:"left"}}><p style={{margin:0,fontWeight:700,fontSize:13,color:altO?T.tx:A.g}}>Bessere Alternativen anzeigen</p><p style={{margin:0,fontSize:11,color:T.tu}}>Ökologisch · Ethisch{altD?.isFood?" · Gesünder":""}</p></div></div>
+              <span style={{color:T.tu}}>{altL?"⟳":altO?"▲":"▼"}</span>
+            </button>
+            {altO&&(<div style={{background:T.sf,border:`1px solid ${T.br}`,borderRadius:12,padding:14,marginTop:7}}>
+              {altL?<p style={{textAlign:"center",color:T.tu,fontSize:13,padding:"20px 0"}}>🔍 KI sucht bessere Alternativen…</p>:altD&&(<div>
+                {altD.avoidReason&&<div style={{background:A.rl,border:`1px solid ${A.r}30`,borderRadius:8,padding:"9px 12px",marginBottom:12}}><p style={{color:A.r,fontSize:12,margin:0,lineHeight:1.5}}>⚠️ {altD.avoidReason}</p></div>}
+                {(altD.alternatives||[]).map((alt,i)=>(<div key={i} style={{background:T.sa,border:`1px solid ${T.br}`,borderRadius:10,padding:"11px 13px",marginBottom:9}}>
+                  <div style={{display:"flex",justifyContent:"space-between",gap:8,marginBottom:5}}>
+                    <div><p style={{margin:"0 0 2px",fontWeight:700,fontSize:13,color:T.tx}}>{alt.name}</p><p style={{margin:0,fontSize:11,color:T.tu}}>{alt.brand} · {alt.availability} · {alt.price}</p></div>
+                    <div style={{display:"flex",gap:4,flexShrink:0}}><span style={{background:ecoC[alt.ecoScore]||A.y,color:"white",borderRadius:6,padding:"2px 6px",fontSize:10,fontWeight:800}}>🌿{alt.ecoScore}</span>{altD.isFood&&<span style={{background:ecoC[alt.healthScore]||A.y,color:"white",borderRadius:6,padding:"2px 6px",fontSize:10,fontWeight:800}}>❤️{alt.healthScore}</span>}</div>
+                  </div>
+                  <p style={{margin:"0 0 7px",fontSize:12,color:T.tm,lineHeight:1.5}}>{alt.why}</p>
+                  {(alt.certifications||[]).length>0&&<div style={{display:"flex",gap:4,flexWrap:"wrap"}}>{alt.certifications.map(c=><Bdg key={c} color={A.t} small>{c}</Bdg>)}</div>}
+                </div>))}
+                {altD.tips&&<div style={{background:A.tl,border:`1px solid ${A.t}30`,borderRadius:8,padding:"9px 12px"}}><p style={{color:A.t,fontSize:12,margin:0,lineHeight:1.5}}>💡 {altD.tips}</p></div>}
+              </div>)}
+            </div>)}
+          </div>
+          <div style={{height:1,background:T.br,margin:"14px 0"}}/>
+          <SL c="Weitere Marken des Konzerns" T={T}/>
+          <div style={{display:"flex",flexWrap:"wrap",gap:5}}>{(entry.brands||[]).map(b=><Bdg key={b} color={T.tm} bg={T.sa} small>{b}</Bdg>)}</div>
+        </div>
+      )}
+      {tab==="map"&&<div><MapView sites={entry.sites} hq={entry.hq} T={T}/><CO2View sites={entry.sites} T={T}/></div>}
+      {tab==="sources"&&(
+        <div>
+          {(entry.sources||[]).map((src,i)=>{const icons={science:"🔬",ngo:"📢",report:"📋",news:"📰"};return(<a key={i} href={src.url} target="_blank" rel="noopener noreferrer" style={{textDecoration:"none"}}><div style={{background:T.sf,border:`1px solid ${T.br}`,borderRadius:10,padding:"12px 14px",marginBottom:7,display:"flex",gap:10,alignItems:"center"}} onMouseEnter={e=>e.currentTarget.style.borderColor=A.t} onMouseLeave={e=>e.currentTarget.style.borderColor=T.br}><span style={{fontSize:18}}>{icons[src.t]||"📰"}</span><div style={{flex:1}}><p style={{color:T.tx,fontSize:12,fontWeight:600,margin:"0 0 3px",lineHeight:1.4}}>{src.title}</p><span style={{color:T.tu,fontSize:11}}>{src.info}</span></div><span style={{color:T.tu}}>↗</span></div></a>);})}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Lib({T,setD,favs,toggleFav}){
+  const[q,setQ]=useState("");const[f,setF]=useState("Alle");
+  const FMAP={"Umwelt":"environment","Politik":"political","Arbeit":"labor","Konzern":"corporate"};
+  const items=DB.filter(e=>{const ms=!q||e.brand.toLowerCase().includes(q.toLowerCase())||e.parent.toLowerCase().includes(q.toLowerCase());const mf=f==="Alle"||(e.issues||[]).some(i=>i.t===FMAP[f]);return ms&&mf;});
+  return(<div>
+    <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Marke oder Konzern…" style={{width:"100%",background:T.sf,border:`1.5px solid ${T.br}`,borderRadius:10,padding:"9px 12px",color:T.tx,fontSize:13,outline:"none",marginBottom:10,boxSizing:"border-box"}}/>
+    <div style={{display:"flex",gap:5,marginBottom:14,flexWrap:"wrap"}}>
+      {["Alle","Umwelt","Politik","Arbeit","Konzern"].map(x=><button key={x} onClick={()=>setF(x)} style={{background:f===x?A.t:T.sf,color:f===x?"white":T.tm,border:`1px solid ${f===x?A.t:T.br}`,borderRadius:20,padding:"5px 12px",fontSize:12,fontWeight:600,cursor:"pointer"}}>{x}</button>)}
+      {favs.length>0&&<button onClick={()=>setF(v=>v==="__fav"?"Alle":"__fav")} style={{background:f==="__fav"?A.y:T.sf,color:f==="__fav"?"white":T.tu,border:`1px solid ${f==="__fav"?A.y:T.br}`,borderRadius:20,padding:"5px 12px",fontSize:12,fontWeight:600,cursor:"pointer"}}>★ {favs.length}</button>}
+    </div>
+    {(f==="__fav"?DB.filter(e=>favs.includes(e.id)):items).map(e=>{
+      const types=[...new Set((e.issues||[]).map(i=>i.t))];
+      return(<div key={e.id} onClick={()=>setD(e)} style={{background:T.sf,border:`1px solid ${T.br}`,borderRadius:14,padding:"13px 15px",marginBottom:9,cursor:"pointer"}} onMouseEnter={x=>x.currentTarget.style.borderColor=A.t} onMouseLeave={x=>x.currentTarget.style.borderColor=T.br}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10}}>
+          <div><div style={{display:"flex",alignItems:"center",gap:6}}><h3 style={{margin:"0 0 2px",fontSize:14,fontWeight:700,color:T.tx}}>{e.brand}</h3>{favs.includes(e.id)&&<span style={{fontSize:11,color:A.y}}>★</span>}</div><p style={{margin:0,fontSize:11,color:T.tu}}>{e.parent} · {e.flag}</p></div>
+          <div style={{display:"flex",alignItems:"center",gap:7}}><RBdg level={e.risk||"medium"}/><span style={{color:T.tu}}>›</span></div>
+        </div>
+        <div style={{display:"flex",gap:5,marginTop:9,flexWrap:"wrap"}}>{types.map(t=>{const m=IM[t];return<Bdg key={t} color={m.color} bg={m.bg} small>{m.icon} {m.label}</Bdg>;})}</div>
+      </div>);
+    })}
+  </div>);
+}
+
+function Scan({T,setD}){
+  const[ean,setE]=useState("");const[load,setLoad]=useState(false);const[err,setErr]=useState(null);const[cam,setCam]=useState(false);const[scanning,setScanning]=useState(false);const[hint,setHint]=useState("");
+  const vRef=useRef(null);const readerRef=useRef(null);const streamRef=useRef(null);
+
+  async function startCam(){
+    setErr(null);setHint("");
+    try{
+      const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment",width:{ideal:1280},height:{ideal:720}}});
+      streamRef.current=stream;
+      if(vRef.current)vRef.current.srcObject=stream;
+      setCam(true);
+      // Start ZXing barcode reader after video loads
+      setTimeout(()=>startZXing(),800);
+    }catch(e){setErr("Kamera nicht verfügbar — bitte EAN manuell eingeben.");}
+  }
+
+  function startZXing(){
+    if(!window.ZXing||!vRef.current)return;
+    setScanning(true);
+    setHint("Barcode in den Rahmen halten…");
+    try{
+      const hints=new Map();
+      const formats=[window.ZXing.BarcodeFormat.EAN_13,window.ZXing.BarcodeFormat.EAN_8,window.ZXing.BarcodeFormat.CODE_128,window.ZXing.BarcodeFormat.UPC_A];
+      hints.set(window.ZXing.DecodeHintType.POSSIBLE_FORMATS,formats);
+      const reader=new window.ZXing.BrowserMultiFormatReader(hints);
+      readerRef.current=reader;
+      reader.decodeFromVideoElement(vRef.current,(result,err2)=>{
+        if(result){
+          const code=result.getText();
+          setHint("✓ Barcode erkannt: "+code);
+          stopCam();
+          lookup(code);
+        }
+      });
+    }catch(e){setHint("Scanner bereit — oder EAN unten eingeben");}
+  }
+
+  function stopCam(){
+    readerRef.current?.reset();
+    streamRef.current?.getTracks().forEach(t=>t.stop());
+    setCam(false);setScanning(false);setHint("");
+  }
+  useEffect(()=>()=>{readerRef.current?.reset();streamRef.current?.getTracks().forEach(t=>t.stop());},[]);
+
+  async function lookup(code){
+    const c=code.trim();if(!c)return;
+    if(cam)stopCam();
+    setLoad(true);setErr(null);
+    try{
+      // Check cache first
+      const cached=JSON.parse(localStorage.getItem("kc_cache")||"[]").find(x=>x.id==="scan-"+c);
+      if(cached){setD(cached);setLoad(false);return;}
+      // Open Food Facts — use HTTPS with no-cors fallback
+      let pn="",bn="";
+      try{
+        const off=await fetch(`https://world.openfoodfacts.org/api/v2/product/${c}?fields=product_name,brands`,{headers:{"User-Agent":"KonzernCheck/1.0"}});
+        if(off.ok){const od=await off.json();pn=od.product?.product_name||"";bn=od.product?.brands||"";}
+      }catch{/* CORS fallback — proceed without product name */}
+      // AI lookup
+      const r=await aiCall(
+        `Konzern-Transparenz-Assistent. Antworte NUR mit JSON ohne Markdown:\n{"brand":"","parent":"","flag":"🇩🇪","hq":{"city":"","country":"","lat":0,"lng":0},"desc":"","rev":"","brands":[],"tags":[],"risk":"low|medium|high","issues":[{"t":"environment|political|corporate|labor|social","l":"","s":"high|medium|low"}],"sites":[{"name":"","city":"","country":"","lat":0,"lng":0,"product":""}],"sources":[{"t":"science|ngo|report|news","title":"","info":"","url":""}]}`,
+        `EAN: ${c}. Produkt: "${pn}". Marke: "${bn}". Recherchiere den Mutterkonzern und bekannte ethische oder ökologische Probleme. Falls EAN unbekannt, recherchiere anhand der Marke.`
+      );
+      r.id="scan-"+c;if(!r.brand&&pn)r.brand=pn;if(!r.brand&&bn)r.brand=bn;
+      const cache=JSON.parse(localStorage.getItem("kc_cache")||"[]").filter(x=>x.id!==r.id);
+      localStorage.setItem("kc_cache",JSON.stringify([{...r,_at:new Date().toISOString()},...cache].slice(0,50)));
+      setD(r);
+    }catch(e){setErr("Recherche fehlgeschlagen — bitte erneut versuchen.");}
+    setLoad(false);
+  }
+
+  if(cam)return(
+    <div>
+      <div style={{borderRadius:12,overflow:"hidden",position:"relative",background:"#000",aspectRatio:"4/3"}}>
+        <video ref={vRef} autoPlay playsInline muted style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+        <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",pointerEvents:"none"}}>
+          <div style={{width:240,height:80,border:`2px solid ${scanning?"#22C55E":A.t}`,borderRadius:8,boxShadow:"0 0 0 2000px rgba(0,0,0,0.5)",transition:"border-color 0.3s"}}/>
+        </div>
+        {hint&&<div style={{position:"absolute",top:14,left:"50%",transform:"translateX(-50%)",background:"rgba(0,0,0,0.7)",color:"white",fontSize:12,padding:"6px 14px",borderRadius:20,whiteSpace:"nowrap"}}>{hint}</div>}
+        <div style={{position:"absolute",bottom:0,left:0,right:0,padding:10,background:"rgba(0,0,0,0.65)",display:"flex",gap:7}}>
+          <input placeholder="Oder EAN eingeben…" value={ean} onChange={e=>setE(e.target.value)} onKeyDown={e=>e.key==="Enter"&&lookup(ean)} style={{flex:1,background:"rgba(255,255,255,0.15)",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"8px 10px",color:"white",fontSize:13}}/>
+          <button onClick={()=>lookup(ean)} style={{background:A.t,color:"white",border:"none",borderRadius:8,padding:"8px 12px",fontWeight:700,cursor:"pointer"}}>OK</button>
+          <button onClick={stopCam} style={{background:"rgba(255,255,255,0.15)",color:"white",border:"none",borderRadius:8,padding:"8px 10px",cursor:"pointer"}}>✕</button>
+        </div>
+      </div>
+      <p style={{color:T.tu,fontSize:11,textAlign:"center",marginTop:8}}>Barcode automatisch erkennen oder EAN unten eingeben</p>
+    </div>
+  );
+
+  return(<div>
+    <div style={{background:A.tl,border:`1px solid ${A.t}30`,borderRadius:12,padding:16,marginBottom:18,display:"flex",gap:12,alignItems:"flex-start"}}>
+      <span style={{fontSize:26}}>📷</span>
+      <div><p style={{color:A.td,fontWeight:700,fontSize:14,margin:"0 0 3px"}}>Barcode scannen oder EAN eingeben</p><p style={{color:A.t,fontSize:12,margin:0,lineHeight:1.5}}>Kamera erkennt Barcodes automatisch. Gescannte Produkte werden offline gespeichert.</p></div>
+    </div>
+    <div style={{display:"flex",gap:7,marginBottom:12}}>
+      <input value={ean} onChange={e=>setE(e.target.value)} onKeyDown={e=>e.key==="Enter"&&lookup(ean)} placeholder="EAN-Barcode eingeben (z.B. 4005808311804)…" style={{flex:1,background:T.sa,border:`1.5px solid ${T.br}`,borderRadius:10,padding:"10px 13px",color:T.tx,fontSize:13,outline:"none"}}/>
+      <button onClick={()=>lookup(ean)} disabled={load} style={{background:load?T.br:A.t,color:"white",border:"none",borderRadius:10,padding:"10px 14px",fontWeight:700,fontSize:13,cursor:load?"default":"pointer",whiteSpace:"nowrap"}}>{load?"🔍…":"Suchen"}</button>
+    </div>
+    <button onClick={startCam} style={{width:"100%",background:T.sf,border:`1.5px dashed ${T.bs}`,borderRadius:10,padding:"13px",display:"flex",alignItems:"center",justifyContent:"center",gap:8,color:T.tm,fontSize:13,fontWeight:600,cursor:"pointer",marginBottom:12}}>
+      <span style={{fontSize:18}}>📸</span> Kamera öffnen & Barcode automatisch scannen
+    </button>
+    {err&&<p style={{color:A.r,fontSize:12,marginBottom:10,padding:"9px 12px",background:A.rl,borderRadius:8}}>{err}</p>}
+    {load&&<div style={{background:T.sa,border:`1px solid ${T.br}`,borderRadius:10,padding:"14px",textAlign:"center",marginBottom:12}}><p style={{color:T.tm,fontSize:13,margin:0}}>🔍 KI recherchiert Konzernstruktur…</p></div>}
+    <SL c="Beispiele zum Testen" T={T}/>
+    <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{[["Maggi Würze","4005808311804"],["Nescafé","7613036107686"],["KitKat","4011100102015"],["Ariel Pods","8001841791777"]].map(([l,e])=>(<button key={e} onClick={()=>{setE(e);lookup(e);}} style={{background:T.sa,border:`1px solid ${T.br}`,borderRadius:8,padding:"6px 11px",fontSize:11,color:T.tm,cursor:"pointer"}}>{l}</button>))}</div>
+  </div>);
+}
+
+function NewsView({T}){
+  const[cat,setCat]=useState("all");const[news,setNews]=useState(NEWS0);const[load,setLoad]=useState(false);const[kf,setKf]=useState("");
+  async function refresh(){setLoad(true);try{const r=await aiCall(`Nachrichten-Assistent. NUR JSON-Array:\n[{"id":"x","date":"YYYY-MM","cat":"acquisition|environment|scandal|regulation","konzern":"","title":"","summary":"2-3 Sätze","rc":"positive|negative|neutral","src":""}]`,`4 aktuelle Konzern-News 2024/2025.`,700);if(Array.isArray(r))setNews(p=>[...r.map((n,i)=>({...n,id:"ai"+Date.now()+i})),...p].slice(0,20));}catch{}setLoad(false);}
+  const CATS=[{id:"all",l:"Alle",i:"📰"},{id:"acquisition",l:"Übernahmen",i:"🤝"},{id:"environment",l:"Umwelt",i:"🌿"},{id:"scandal",l:"Skandale",i:"⚠️"},{id:"regulation",l:"Regulierung",i:"🏛️"}];
+  const rcC={positive:A.g,negative:A.r,neutral:A.y};const rcL={positive:"↑ Besser",negative:"↓ Schlechter",neutral:"→ Neutral"};
+  const catC={acquisition:A.b,environment:A.t,scandal:A.r,regulation:A.p};
+  const filtered=news.filter(n=>(cat==="all"||n.cat===cat)&&(!kf||n.konzern.toLowerCase().includes(kf.toLowerCase())));
+  return(<div>
+    <div style={{display:"flex",gap:7,marginBottom:10,flexWrap:"wrap"}}>
+      <input value={kf} onChange={e=>setKf(e.target.value)} placeholder="Konzern filtern…" style={{flex:1,minWidth:120,background:T.sf,border:`1.5px solid ${T.br}`,borderRadius:10,padding:"8px 11px",color:T.tx,fontSize:12,outline:"none"}}/>
+      <button onClick={refresh} disabled={load} style={{background:load?T.br:A.b,color:"white",border:"none",borderRadius:10,padding:"8px 14px",fontWeight:700,fontSize:12,cursor:load?"default":"pointer",whiteSpace:"nowrap"}}>{load?"⟳ Lädt…":"🔄 KI-Update"}</button>
+    </div>
+    <div style={{display:"flex",gap:4,marginBottom:14,overflowX:"auto",paddingBottom:4}}>{CATS.map(c=><button key={c.id} onClick={()=>setCat(c.id)} style={{background:cat===c.id?A.t:T.sf,color:cat===c.id?"white":T.tm,border:`1px solid ${cat===c.id?A.t:T.br}`,borderRadius:20,padding:"4px 11px",fontSize:11,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>{c.i} {c.l}</button>)}</div>
+    {filtered.map(n=>{const cc=catC[n.cat]||A.b;return(<div key={n.id} style={{background:T.sf,border:`1px solid ${T.br}`,borderRadius:12,padding:"12px 14px",marginBottom:9}}>
+      <div style={{display:"flex",justifyContent:"space-between",gap:8,marginBottom:7,flexWrap:"wrap"}}>
+        <div style={{display:"flex",gap:5,flexWrap:"wrap"}}><span style={{fontSize:10,fontWeight:700,color:cc,background:cc+"18",padding:"2px 7px",borderRadius:20,border:`1px solid ${cc}30`}}>{CATS.find(c=>c.id===n.cat)?.i} {CATS.find(c=>c.id===n.cat)?.l}</span><span style={{fontSize:10,color:T.tu,background:T.sa,padding:"2px 7px",borderRadius:20,border:`1px solid ${T.br}`}}>{n.konzern}</span></div>
+        <div style={{display:"flex",gap:5,alignItems:"center"}}><span style={{fontSize:10,fontWeight:700,color:rcC[n.rc]||A.y}}>{rcL[n.rc]}</span><span style={{fontSize:10,color:T.tu}}>{n.date}</span></div>
+      </div>
+      <h3 style={{margin:"0 0 5px",fontSize:13,fontWeight:700,color:T.tx,lineHeight:1.4}}>{n.title}</h3>
+      <p style={{margin:"0 0 5px",fontSize:12,color:T.tm,lineHeight:1.6}}>{n.summary}</p>
+      <span style={{fontSize:10,color:T.tu}}>Quelle: {n.src}</span>
+    </div>);})}
+  </div>);
+}
+
+function SeasonView({T}){
+  const now=new Date();const[m,setM]=useState(now.getMonth()+1);const[cf,setCf]=useState("Alle");
+  const s=SEA[m];const cats=["Alle",...new Set(Object.values(SEA).flatMap(x=>x.i.map(i=>i.c)))];
+  const items=cf==="Alle"?s.i:s.i.filter(i=>i.c===cf);
+  const nm=m===12?1:m+1;const ns=SEA[nm];
+  const coming=ns.i.filter(n=>!s.i.find(x=>x.n===n.n)).slice(0,4);
+  const going=s.i.filter(x=>!ns.i.find(n=>n.n===x.n)).slice(0,4);
+  return(<div>
+    <div style={{display:"flex",gap:4,marginBottom:14,overflowX:"auto",paddingBottom:4}}>
+      {Object.entries(SEA).map(([mo,d])=>{const mn=parseInt(mo);return(<button key={mo} onClick={()=>setM(mn)} style={{flexShrink:0,background:m===mn?A.t:T.sf,color:m===mn?"white":T.tm,border:`1px solid ${m===mn?A.t:T.br}`,borderRadius:10,padding:"6px 9px",fontSize:11,fontWeight:600,cursor:"pointer",position:"relative"}}>{d.e}<br/><span style={{fontSize:9}}>{d.n.slice(0,3)}</span>{mn===now.getMonth()+1&&<span style={{position:"absolute",top:2,right:2,width:5,height:5,borderRadius:"50%",background:A.g,display:"block"}}/>}</button>);})}
+    </div>
+    <div style={{background:T.sf,borderRadius:12,border:`1px solid ${T.br}`,padding:"12px 14px",marginBottom:12}}><div style={{display:"flex",alignItems:"center",gap:9}}><span style={{fontSize:20}}>{s.e}</span><div><h3 style={{color:T.tx,fontWeight:800,fontSize:15,margin:0}}>{s.n}</h3><p style={{color:T.tu,fontSize:11,margin:0}}>{s.i.length} Produkte saisonal verfügbar{m===now.getMonth()+1?" · Aktuell":""}</p></div></div></div>
+    <div style={{display:"flex",gap:5,marginBottom:12,flexWrap:"wrap"}}>{cats.map(c=><button key={c} onClick={()=>setCf(c)} style={{background:cf===c?A.t:T.sf,color:cf===c?"white":T.tm,border:`1px solid ${cf===c?A.t:T.br}`,borderRadius:20,padding:"4px 11px",fontSize:11,fontWeight:600,cursor:"pointer"}}>{c}</button>)}</div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(130px,1fr))",gap:7,marginBottom:14}}>
+      {items.map(item=>{const c=CC[item.c]||{bg:T.sa,c:T.tm};return(<div key={item.n} style={{background:c.bg,border:`1px solid ${c.c}30`,borderRadius:10,padding:"9px 11px",display:"flex",alignItems:"center",gap:7}}><span style={{fontSize:16}}>{item.c==="Obst"?"🍎":item.c==="Gemüse"?"🥦":item.c==="Salat"?"🥗":item.c==="Wurzel"?"🥕":"🌿"}</span><div><p style={{fontWeight:700,fontSize:12,color:c.c,margin:0}}>{item.n}</p><p style={{fontSize:9,color:c.c+"99",margin:0}}>{item.c}</p></div></div>);})}
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9,marginBottom:12}}>
+      {coming.length>0&&<div style={{background:A.gl,border:`1px solid ${A.g}30`,borderRadius:10,padding:"10px 12px"}}><p style={{fontSize:10,fontWeight:700,color:A.g,textTransform:"uppercase",margin:"0 0 5px"}}>↑ Kommt im {SEA[nm].n}</p>{coming.map(i=><p key={i.n} style={{fontSize:11,color:A.td,margin:"2px 0"}}>+ {i.n}</p>)}</div>}
+      {going.length>0&&<div style={{background:A.ol,border:`1px solid ${A.o}30`,borderRadius:10,padding:"10px 12px"}}><p style={{fontSize:10,fontWeight:700,color:A.o,textTransform:"uppercase",margin:"0 0 5px"}}>↓ Läuft aus</p>{going.map(i=><p key={i.n} style={{fontSize:11,color:A.o,margin:"2px 0"}}>– {i.n}</p>)}</div>}
+    </div>
+    <div style={{background:T.sa,border:`1px solid ${T.br}`,borderRadius:10,padding:"10px 14px"}}><p style={{color:T.tu,fontSize:12,lineHeight:1.7,margin:0}}>🌍 Saisonale Lebensmittel aus Deutschland sparen bis zu <strong style={{color:T.tx}}>90% der Transportemissionen</strong> gegenüber Importprodukten.</p></div>
+  </div>);
+}
+
+function Compare({T,setD}){
+  const[a,setA]=useState(DB[0]);const[b,setB]=useState(DB[1]);
+  const rp=e=>{const s=(e.issues||[]).reduce((acc,i)=>acc+(i.s==="high"?3:i.s==="medium"?2:1),0);const mx=(e.issues||[]).length*3;return mx>0?Math.round((s/mx)*100):0;};
+  function Col({entry,side}){const pct=rp(entry);const color=pct>=70?A.r:pct>=40?A.o:A.g;return(
+    <div style={{flex:1,minWidth:0}}>
+      <select value={entry.id} onChange={e=>{const f=DB.find(x=>x.id===e.target.value);side==="a"?setA(f):setB(f);}} style={{background:T.sa,border:`1px solid ${T.br}`,borderRadius:8,padding:"7px 9px",color:T.tx,fontSize:11,width:"100%",marginBottom:9}}>{DB.map(x=><option key={x.id} value={x.id}>{x.brand}</option>)}</select>
+      <div style={{background:T.sf,borderRadius:12,border:`1px solid ${T.br}`,padding:12}}>
+        <h3 style={{margin:"0 0 2px",fontSize:13,fontWeight:800,color:T.tx}}>{entry.brand}</h3>
+        <p style={{margin:"0 0 7px",fontSize:10,color:T.tu}}>{entry.parent}</p>
+        <RBdg level={entry.risk||"medium"}/>
+        <div style={{margin:"9px 0 5px"}}><div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}><span style={{fontSize:10,color:T.tu}}>Score</span><span style={{fontSize:11,fontWeight:800,color}}>{pct}%</span></div><div style={{background:T.sa,borderRadius:3,height:4}}><div style={{width:`${pct}%`,height:"100%",background:color,borderRadius:3}}/></div></div>
+        {(entry.issues||[]).map((issue,i)=>{const sm=SM[issue.s]||SM.low;const im=IM[issue.t]||IM.corporate;return(<div key={i} style={{display:"flex",gap:5,alignItems:"flex-start",marginBottom:6,paddingBottom:6,borderBottom:`1px solid ${T.br}`}}><span style={{fontSize:12}}>{im.icon}</span><div><p style={{margin:"0 0 2px",fontSize:10,color:T.tx,lineHeight:1.4}}>{issue.l}</p><span style={{fontSize:9,fontWeight:700,color:sm.color}}>{sm.label}</span></div></div>);})}
+      </div>
+    </div>
+  );}
+  return(<div><div style={{background:T.sa,borderRadius:12,border:`1px solid ${T.br}`,padding:"10px 14px",marginBottom:14}}><p style={{color:T.tm,fontSize:12,margin:0}}>⚖️ Zwei Konzerne direkt nebeneinander vergleichen.</p></div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:9}}><Col entry={a} side="a"/><Col entry={b} side="b"/></div></div>);
+}
+
+function Cache({T,setD}){
+  const[items,setItems]=useState(()=>JSON.parse(localStorage.getItem("kc_cache")||"[]"));
+  function del(id){const u=items.filter(c=>c.id!==id);localStorage.setItem("kc_cache",JSON.stringify(u));setItems(u);}
+  return(<div>
+    <div style={{background:T.sa,borderRadius:12,border:`1px solid ${T.br}`,padding:"11px 14px",marginBottom:14,display:"flex",gap:10,alignItems:"center"}}><span style={{fontSize:20}}>💾</span><div><p style={{color:T.tx,fontWeight:700,fontSize:12,margin:0}}>{items.length} gescannte Produkte gespeichert</p><p style={{color:T.tu,fontSize:11,margin:0}}>Auch ohne Internet verfügbar</p></div></div>
+    {items.length===0?<div style={{textAlign:"center",padding:"36px 20px",color:T.tu}}><p style={{fontSize:28,marginBottom:7}}>📭</p><p style={{fontSize:13,color:T.tm,marginBottom:3}}>Noch keine Produkte gescannt</p><p style={{fontSize:11}}>Gescannte Produkte werden automatisch hier gespeichert.</p></div>:(<div>
+      {items.map(e=>(<div key={e.id} style={{background:T.sf,border:`1px solid ${T.br}`,borderRadius:12,padding:"11px 13px",marginBottom:7,display:"flex",gap:10,alignItems:"center"}}>
+        <div style={{flex:1,cursor:"pointer"}} onClick={()=>setD(e)}><div style={{display:"flex",alignItems:"center",gap:7,marginBottom:3}}><span style={{fontWeight:700,fontSize:13,color:T.tx}}>{e.brand}</span><RBdg level={e.risk||"medium"}/></div><p style={{fontSize:11,color:T.tu,margin:0}}>{e.parent} · {e._at?new Date(e._at).toLocaleDateString("de-DE"):""}</p></div>
+        <button onClick={()=>del(e.id)} style={{background:"none",border:`1px solid ${T.br}`,borderRadius:8,padding:"4px 8px",color:T.tu,fontSize:12,cursor:"pointer"}}>🗑</button>
+      </div>))}
+      <button onClick={()=>{localStorage.setItem("kc_cache","[]");setItems([]);}} style={{width:"100%",marginTop:7,background:"none",border:`1px solid ${T.br}`,borderRadius:10,padding:"8px",color:A.r,fontSize:12,cursor:"pointer",fontWeight:600}}>🗑 Cache leeren</button>
+    </div>)}
+  </div>);
+}
+
+function Report({T}){
+  const[form,setForm]=useState({brand:"",problem:"",type:"environment"});const[done,setDone]=useState(false);const[load,setLoad]=useState(false);const[res,setRes]=useState(null);
+  const inp={background:T.sa,border:`1.5px solid ${T.br}`,borderRadius:8,padding:"9px 11px",color:T.tx,fontSize:12,outline:"none",width:"100%",boxSizing:"border-box"};
+  async function submit(){if(!form.brand.trim()||!form.problem.trim())return;setLoad(true);try{const r=await aiCall(`Faktenchecker. NUR JSON: {"ok":true|false,"text":"Einschätzung","tip":"Quellenhinweis"}`,`Marke: ${form.brand}\nProblem: ${form.problem}`,300);setRes(r);}catch{setRes({ok:true,text:"Nicht geprüft.",tip:"Bitte Quelle angeben."});}setLoad(false);setDone(true);}
+  if(done)return(<div><div style={{background:res?.ok?A.gl:A.ol,border:`1px solid ${res?.ok?A.g:A.o}40`,borderRadius:12,padding:18,marginBottom:14}}><p style={{fontWeight:700,fontSize:14,color:res?.ok?A.g:A.o,margin:"0 0 5px"}}>{res?.ok?"✓ Meldung plausibel":"⚠️ Prüfung empfohlen"}</p><p style={{color:T.tm,fontSize:12,margin:"0 0 6px",lineHeight:1.6}}>{res?.text}</p><p style={{color:T.tu,fontSize:11,margin:0}}>💡 {res?.tip}</p></div><button onClick={()=>{setDone(false);setForm({brand:"",problem:"",type:"environment"});setRes(null);}} style={{width:"100%",background:"none",border:`1px solid ${T.br}`,borderRadius:8,padding:"8px",color:T.tm,fontSize:12,cursor:"pointer"}}>Weitere Meldung</button></div>);
+  return(<div>
+    <div style={{background:T.sa,borderRadius:12,border:`1px solid ${T.br}`,padding:"12px 14px",marginBottom:18}}><p style={{color:T.tm,fontSize:12,margin:0,lineHeight:1.6}}>📬 Fund entdeckt? KI prüft die Plausibilität deiner Meldung.</p></div>
+    <div style={{display:"flex",flexDirection:"column",gap:10}}>
+      <div><p style={{fontSize:10,fontWeight:700,color:T.tu,textTransform:"uppercase",margin:"0 0 5px"}}>Marke *</p><input value={form.brand} onChange={e=>setForm({...form,brand:e.target.value})} placeholder="z.B. Aldi, Rewe Bio…" style={inp}/></div>
+      <div><p style={{fontSize:10,fontWeight:700,color:T.tu,textTransform:"uppercase",margin:"0 0 5px"}}>Problem *</p><textarea value={form.problem} onChange={e=>setForm({...form,problem:e.target.value})} placeholder="Was hast du entdeckt?" style={{...inp,minHeight:75,resize:"vertical"}}/></div>
+      <div><p style={{fontSize:10,fontWeight:700,color:T.tu,textTransform:"uppercase",margin:"0 0 5px"}}>Kategorie</p><select value={form.type} onChange={e=>setForm({...form,type:e.target.value})} style={inp}>{Object.entries(IM).map(([k,v])=><option key={k} value={k}>{v.icon} {v.label}</option>)}</select></div>
+      <button onClick={submit} disabled={load||!form.brand.trim()||!form.problem.trim()} style={{background:load||!form.brand.trim()||!form.problem.trim()?T.br:A.t,color:"white",border:"none",borderRadius:10,padding:"11px",fontWeight:700,fontSize:13,cursor:load||!form.brand.trim()||!form.problem.trim()?"default":"pointer",marginTop:4}}>{load?"KI prüft…":"Meldung einreichen"}</button>
+    </div>
+  </div>);
+}
+
+function Search({T,setD}){
+  const[q,setQ]=useState("");const[load,setLoad]=useState(false);const[err,setErr]=useState(null);
+  async function search(){if(!q.trim())return;setLoad(true);setErr(null);try{const r=await aiCall(`Konzern-Assistent. NUR JSON:\n{"brand":"","parent":"","flag":"🇩🇪","hq":{"city":"","country":"","lat":0,"lng":0},"desc":"","rev":"","brands":[],"tags":[],"risk":"low|medium|high","issues":[{"t":"environment|political|corporate|labor|social","l":"","s":"high|medium|low"}],"sites":[{"name":"","city":"","country":"","lat":0,"lng":0,"product":""}],"sources":[{"t":"science|ngo|report|news","title":"","info":"","url":""}]}`,`Recherchiere: "${q}"`);r.id="ai-"+Date.now();setD(r);}catch{setErr("Recherche fehlgeschlagen.");}setLoad(false);}
+  return(<div>
+    <div style={{background:A.bl,border:`1px solid ${A.b}30`,borderRadius:12,padding:16,marginBottom:18,display:"flex",gap:12,alignItems:"flex-start"}}><span style={{fontSize:24}}>🤖</span><div><p style={{color:A.b,fontWeight:700,fontSize:13,margin:"0 0 3px"}}>KI-Konzernrecherche</p><p style={{color:"#1D4ED8",fontSize:12,margin:0,lineHeight:1.5}}>Marke eingeben — KI analysiert Eigentümerstruktur und bekannte Probleme.</p></div></div>
+    <div style={{display:"flex",gap:7,marginBottom:10}}><input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==="Enter"&&search()} placeholder="z.B. Alpro, Barilla, Unilever…" style={{flex:1,background:T.sa,border:`1.5px solid ${T.br}`,borderRadius:10,padding:"10px 13px",color:T.tx,fontSize:13,outline:"none"}}/><button onClick={search} disabled={load} style={{background:load?T.br:A.b,color:"white",border:"none",borderRadius:10,padding:"10px 16px",fontSize:12,fontWeight:700,cursor:load?"default":"pointer"}}>{load?"🔍…":"Suchen"}</button></div>
+    {err&&<p style={{color:A.r,fontSize:12,padding:"9px 12px",background:A.rl,borderRadius:8}}>{err}</p>}
+    <p style={{color:T.tu,fontSize:11,lineHeight:1.7}}>⚠️ KI-Ergebnisse immer gegen Primärquellen prüfen: <strong>Earthsight</strong>, <strong>WWF</strong>.</p>
+  </div>);
+}
+
+const NAV=[{id:"home",i:"🏠",l:"Start"},{id:"lib",i:"📚",l:"Bibliothek"},{id:"scan",i:"📷",l:"Scannen"},{id:"news",i:"📰",l:"News"},{id:"more",i:"⋯",l:"Mehr"}];
+const MORE=[{id:"season",i:"🥦",l:"Saison",d:"Regional & frisch"},{id:"compare",i:"⚖️",l:"Vergleich",d:"Nebeneinander"},{id:"cache",i:"💾",l:"Offline",d:"Gescannte Scans"},{id:"report",i:"📬",l:"Melden",d:"Fund einreichen"},{id:"search",i:"🔬",l:"KI-Suche",d:"KI-gestützt"}];
+const PT={home:"",lib:"",scan:"Produkt scannen",news:"Konzern-News",season:"Saisonkalender",compare:"Vergleich",cache:"Offline-Speicher",report:"Fund melden",search:"KI-Recherche"};
+
+function App(){
+  const[dark,setDark]=useState(true);
+  const T={...(dark?D:L)};
+  const[nav,setNav]=useState("home");
+  const[detail,setDetail]=useState(null);
+  const[more,setMore]=useState(false);
+  const[favs,setFavs]=useState(()=>{try{return JSON.parse(localStorage.getItem("kc_favs")||"[]");}catch{return[];}});
+  useEffect(()=>{try{localStorage.setItem("kc_favs",JSON.stringify(favs));}catch{}},[favs]);
+  function toggleFav(id){setFavs(f=>f.includes(id)?f.filter(x=>x!==id):[...f,id]);}
+  function go(id){setNav(id);setMore(false);setDetail(null);}
+  const cLen=JSON.parse(localStorage.getItem("kc_cache")||"[]").length;
+  const isMain=nav==="home"||nav==="lib";
+  useEffect(()=>{document.body.style.background=T.bg;},[dark]);
+
+  return(
+    <div style={{minHeight:"100vh",background:T.bg}}>
+      <div style={{maxWidth:680,margin:"0 auto",padding:"0 13px 90px"}}>
+        <div style={{padding:"16px 0 12px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            {(detail||!isMain)&&<button onClick={()=>{if(detail)setDetail(null);else go("home");}} style={{background:"none",border:"none",color:T.tm,fontSize:17,cursor:"pointer",padding:"0 4px 0 0"}}>←</button>}
+            <div>
+              <h1 style={{margin:0,fontSize:18,fontWeight:800,color:T.tx,letterSpacing:"-0.02em"}}>{detail?detail.brand:isMain?<><span style={{color:A.t}}>Konzern</span>Check</>:PT[nav]||"KonzernCheck"}</h1>
+              {!detail&&isMain&&<p style={{margin:"1px 0 0",fontSize:11,color:T.tu}}>Transparenz für den Einkauf</p>}
+            </div>
+          </div>
+          <div style={{display:"flex",gap:6,alignItems:"center"}}>
+            {cLen>0&&!detail&&<span style={{background:T.sa,border:`1px solid ${T.br}`,borderRadius:20,padding:"3px 9px",fontSize:10,color:T.tu,fontWeight:600}}>💾 {cLen}</span>}
+            <button onClick={()=>setDark(d=>!d)} style={{background:T.sf,border:`1px solid ${T.br}`,borderRadius:20,padding:"5px 10px",fontSize:12,color:T.tm,cursor:"pointer",fontWeight:600}}>{dark?"☀️":"🌙"}</button>
+          </div>
+        </div>
+
+        {detail?<Detail entry={detail} onBack={()=>setDetail(null)} favs={favs} toggleFav={toggleFav} T={T}/>
+        :nav==="home"?<Home T={T} go={go} setD={setDetail}/>
+        :nav==="lib"?<Lib T={T} setD={setDetail} favs={favs} toggleFav={toggleFav}/>
+        :nav==="scan"?<Scan T={T} setD={setDetail}/>
+        :nav==="news"?<NewsView T={T}/>
+        :nav==="season"?<SeasonView T={T}/>
+        :nav==="compare"?<Compare T={T} setD={setDetail}/>
+        :nav==="cache"?<Cache T={T} setD={setDetail}/>
+        :nav==="report"?<Report T={T}/>
+        :<Search T={T} setD={setDetail}/>}
+      </div>
+
+      {more&&(<>
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",zIndex:150}} onClick={()=>setMore(false)}/>
+        <div style={{position:"fixed",bottom:65,left:"50%",transform:"translateX(-50%)",width:"min(440px,94vw)",background:T.sf,border:`1px solid ${T.br}`,borderRadius:16,padding:10,zIndex:160,display:"grid",gridTemplateColumns:"1fr 1fr",gap:7}}>
+          {MORE.map(n=>(<button key={n.id} onClick={()=>go(n.id)} style={{background:nav===n.id?A.tl:T.sa,border:`1px solid ${nav===n.id?A.t:T.br}`,borderRadius:11,padding:"12px 10px",cursor:"pointer",display:"flex",alignItems:"center",gap:9}}>
+            <span style={{fontSize:20}}>{n.i}</span>
+            <div style={{textAlign:"left"}}><p style={{margin:0,fontWeight:700,fontSize:12,color:T.tx}}>{n.l}</p><p style={{margin:0,fontSize:10,color:T.tu}}>{n.id==="cache"?`${cLen} gespeichert`:n.d}</p></div>
+          </button>))}
+        </div>
+      </>)}
+
+      {!detail&&(<div style={{position:"fixed",bottom:0,left:0,right:0,background:T.nb,backdropFilter:"blur(14px)",borderTop:`1px solid ${T.nb2}`,display:"flex",justifyContent:"center",padding:"5px 0 max(7px,env(safe-area-inset-bottom))",zIndex:100}}>
+        <div style={{display:"flex",gap:2,maxWidth:490,width:"100%",padding:"0 7px"}}>
+          {NAV.map(n=>(<button key={n.id} onClick={()=>n.id==="more"?setMore(m=>!m):go(n.id)} style={{flex:1,background:(n.id==="more"?more:nav===n.id)?A.tl:"transparent",border:`1px solid ${(n.id==="more"?more:nav===n.id)?A.t+"50":"transparent"}`,borderRadius:10,padding:"5px 3px",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+            <span style={{fontSize:17}}>{n.i}</span>
+            <span style={{fontSize:9,fontWeight:(n.id==="more"?more:nav===n.id)?700:500,color:(n.id==="more"?more:nav===n.id)?A.t:T.tu}}>{n.l}</span>
+          </button>))}
+        </div>
+      </div>)}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
